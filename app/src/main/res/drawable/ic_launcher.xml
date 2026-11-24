@@ -1,0 +1,24 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- 深色圓底 -->
+    <path
+        android:fillColor="#FF1E1E1E"
+        android:pathData="M24,2a22,22 0,1 1,0 44a22,22 0,1 1,0 -44z" />
+    <!-- 琥珀色鏡頭外環 -->
+    <path
+        android:fillColor="#FFFFC107"
+        android:pathData="M24,9a15,15 0,1 1,0 30a15,15 0,1 1,0 -30z" />
+    <path
+        android:fillColor="#FF1E1E1E"
+        android:pathData="M24,12.5a11.5,11.5 0,1 1,0 23a11.5,11.5 0,1 1,0 -23z" />
+    <!-- 光圈葉片 -->
+    <path
+        android:fillColor="#FFFFC107"
+        android:pathData="M24,15 L28.5,22 L24,22 Z M33,24 L26,28.5 L26,24 Z M24,33 L19.5,26 L24,26 Z M15,24 L22,19.5 L22,24 Z" />
+    <path
+        android:fillColor="#FF90CAF9"
+        android:pathData="M24,21.5a2.5,2.5 0,1 1,0 5a2.5,2.5 0,1 1,0 -5z" />
+</vector>

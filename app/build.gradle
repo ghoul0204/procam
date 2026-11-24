@@ -1,0 +1,37 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'tw.wei.procam'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'tw.wei.procam'
+        minSdk 30
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+    // 固定簽章：之後每次更新都能直接覆蓋安裝，不用先移除舊版
+    signingConfigs {
+        fixed {
+            storeFile file('procam-debug.keystore')
+            storePassword 'android'
+            keyAlias 'procam'
+            keyPassword 'android'
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.fixed
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}

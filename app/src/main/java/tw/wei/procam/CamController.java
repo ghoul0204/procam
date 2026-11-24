@@ -445,9 +445,22 @@ public class CamController {
         updatePreview();
     }
 
+    private final Runnable updRun = this::doUpdatePreview;
+
+    /** 合併連續的更新（拖滑桿時不會塞一堆請求） */
     public void updatePreview() {
         Handler h = cam;
-        if (h != null) h.post(this::doUpdatePreview);
+        if (h != null) {
+            h.removeCallbacks(updRun);
+            h.post(updRun);
+        }
+    }
+
+    /** 預覽最長曝光 1/15 秒；更慢的快門用提高增益模擬亮度，畫面才不會卡住 */
+    static final long PREVIEW_MAX_EXP = 66_666_666L;
+
+    public boolean previewSimulated() {
+        return isManualExposure() && curExp > PREVIEW_MAX_EXP;
     }
 
     private void doUpdatePreview() {
@@ -491,8 +504,13 @@ public class CamController {
         // 曝光
         if (isManualExposure()) {
             long e = curExp;
+            int iso = curIso;
+            if (!still && e > PREVIEW_MAX_EXP) {
+                iso = clampIso((int) Math.round((double) iso * e / PREVIEW_MAX_EXP));
+                e = PREVIEW_MAX_EXP;
+            }
             b.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_OFF);
-            b.set(CaptureRequest.SENSOR_SENSITIVITY, curIso);
+            b.set(CaptureRequest.SENSOR_SENSITIVITY, iso);
             b.set(CaptureRequest.SENSOR_EXPOSURE_TIME, e);
             b.set(CaptureRequest.SENSOR_FRAME_DURATION, Math.max(e, 33_333_333L));
         } else {
@@ -595,6 +613,10 @@ public class CamController {
             Integer af = r.get(CaptureResult.CONTROL_AF_STATE);
             i.afState = af == null ? 0 : af;
             i.manualExposure = manual;
+            if (manual) { // 顯示真正拍照會用的值，而不是預覽模擬值
+                i.iso = curIso;
+                i.exp = curExp;
+            }
             ui.post(() -> L.onInfo(i));
         }
     };

@@ -303,6 +303,8 @@ public class MainActivity extends Activity implements CamController.Listener, Se
     }
 
     private void setChip(TextView t, boolean on) {
+        if (Boolean.valueOf(on).equals(t.getTag())) return;
+        t.setTag(on);
         t.setBackground(round(on ? AMBER : 0xFF2C2C2C, 16));
         t.setTextColor(on ? Color.BLACK : Color.WHITE);
     }
@@ -318,7 +320,7 @@ public class MainActivity extends Activity implements CamController.Listener, Se
         infoBar.setPadding(dp(12), dp(6), dp(12), dp(4));
         info1 = text(16, Color.WHITE);
         info1.setTypeface(Typeface.create(Typeface.MONOSPACE, Typeface.BOLD));
-        info1.setText("ISO --   --   f/--");
+        setText(info1, "ISO --   --   f/--");
         info2 = text(12, 0xFFB0B0B0);
         infoBar.addView(info1);
         infoBar.addView(info2);
@@ -685,7 +687,7 @@ public class MainActivity extends Activity implements CamController.Listener, Se
                 int cur = !auto ? cc.manIso : (info != null && info.iso > 0 ? info.iso : 100);
                 seek.setMax(isoList.length - 1);
                 seek.setProgress(nearest(isoList, cur));
-                valueTv.setText(auto ? "A  " + cur : String.valueOf(cur));
+                setText(valueTv, auto ? "A  " + cur : String.valueOf(cur));
                 break;
             }
             case 1: {
@@ -694,7 +696,7 @@ public class MainActivity extends Activity implements CamController.Listener, Se
                 long cur = !auto ? cc.manExp : (info != null && info.exp > 0 ? info.exp : 16_666_666L);
                 seek.setMax(expList.length - 1);
                 seek.setProgress(nearest(expList, cur));
-                valueTv.setText((auto ? "A  " : "") + fmtShutter(cur / 1e9));
+                setText(valueTv, (auto ? "A  " : "") + fmtShutter(cur / 1e9));
                 break;
             }
             case 2: {
@@ -703,7 +705,7 @@ public class MainActivity extends Activity implements CamController.Listener, Se
                 float cur = !auto ? cc.manFocus : (info != null && info.focusDiopter >= 0 ? info.focusDiopter : 0f);
                 seek.setMax(100);
                 seek.setProgress(cc.minFocus > 0 ? Math.round(100f * (float) Math.sqrt(Math.min(1f, cur / cc.minFocus))) : 0);
-                valueTv.setText((auto ? "AF " : "") + fmtFocus(cur));
+                setText(valueTv, (auto ? "AF " : "") + fmtFocus(cur));
                 if (!enabled) extra = "\n（這個鏡頭不支援手動對焦）";
                 break;
             }
@@ -714,7 +716,7 @@ public class MainActivity extends Activity implements CamController.Listener, Se
                 int idx = indexOf(awbList, cc.awb);
                 if (idx < 0) idx = Math.max(0, indexOf(awbList, CameraMetadata.CONTROL_AWB_MODE_DAYLIGHT));
                 seek.setProgress(idx);
-                valueTv.setText(auto ? "自動" : awbShort(cc.awb));
+                setText(valueTv, auto ? "自動" : awbShort(cc.awb));
                 break;
             }
             default: {
@@ -722,7 +724,7 @@ public class MainActivity extends Activity implements CamController.Listener, Se
                 int lo = cc.evRange.getLower();
                 seek.setMax(cc.evRange.getUpper() - lo);
                 seek.setProgress(cc.evIdx - lo);
-                valueTv.setText(fmtEv(cc.evIdx) + " EV");
+                setText(valueTv, fmtEv(cc.evIdx) + " EV");
                 if (cc.manIso != null && cc.manExp != null) extra = "\n（目前是全手動 M，曝光補償不作用，請看上方「測光」）";
             }
         }
@@ -731,7 +733,7 @@ public class MainActivity extends Activity implements CamController.Listener, Se
         autoChip.setEnabled(enabled);
         setChip(autoChip, auto);
         autoChip.setText(tab == 4 ? "歸零" : "AUTO");
-        tip.setText(Lessons.TAB_TIPS[tab] + extra);
+        setText(tip, Lessons.TAB_TIPS[tab] + extra);
         updatingSeek = false;
     }
 
@@ -888,7 +890,7 @@ public class MainActivity extends Activity implements CamController.Listener, Se
     public void onInfo(CamController.Info i) {
         info = i;
         float n = i.aperture > 0 ? i.aperture : 1.68f;
-        info1.setText(String.format(Locale.US, "ISO %d   %s   f/%.1f   %dmm",
+        setText(info1, String.format(Locale.US, "ISO %d   %s   f/%.1f   %dmm",
                 i.iso, fmtShutter(i.exp / 1e9), n, Math.round(cc.baseEquivMm * cc.zoom)));
         ov.setAfState(i.afState);
         updateInfo2();
@@ -928,7 +930,7 @@ public class MainActivity extends Activity implements CamController.Listener, Se
         }
         sb.append(" · ").append(zoomLabel(cc.zoom)).append('x');
         if (mi && me) sb.append(String.format(Locale.US, " · 測光 %+.1f", meterStops()));
-        info2.setText(sb.toString());
+        setText(info2, sb.toString());
     }
 
     private void updateCoach() {
@@ -939,6 +941,8 @@ public class MainActivity extends Activity implements CamController.Listener, Se
         double ms = meterStops();
         if (clipHi > 3)
             c = "⚠ 高光過曝（直方圖撞右牆）：降低曝光補償、加快快門或降低 ISO";
+        else if (cc.previewSimulated())
+            c = "長曝光 " + fmtShutter(t) + "：預覽亮度為模擬，按快門後要等曝光結束，請用腳架或靠穩＋計時";
         else if (t > safe && t > 0)
             c = "⚠ 快門 " + fmtShutter(t) + " 比安全快門 " + fmtShutter(safe) + " 慢：手持可能糊，靠穩或用計時";
         else if (info != null && info.iso >= 3200)
@@ -950,7 +954,7 @@ public class MainActivity extends Activity implements CamController.Listener, Se
             c = "暗部大量死黑（直方圖撞左牆）：可提高曝光，或刻意拍成剪影";
         else
             c = "✓ 曝光正常　點畫面＝對焦＋測光，長按解除，雙指縮放";
-        coach.setText(c);
+        setText(coach, c);
         coach.setTextColor(c.startsWith("✓") ? 0xFFB9F6CA : AMBER);
     }
 
@@ -984,6 +988,11 @@ public class MainActivity extends Activity implements CamController.Listener, Se
                 .setView(sv)
                 .setPositiveButton("開始練習", null)
                 .show();
+    }
+
+    /** 只有內容變了才更新，避免每秒重排版好幾次 */
+    private static void setText(TextView t, CharSequence s) {
+        if (!s.toString().contentEquals(t.getText())) t.setText(s);
     }
 
     private void toast(String s) {
